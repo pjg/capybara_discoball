@@ -20,7 +20,21 @@ module Capybara
 
       private
 
-      def with_webrick_runner
+      def with_webrick_runner(&block)
+        retry_count = 3
+
+        begin
+          launch_webrick(&block)
+        rescue Errno::EADDRINUSE => e
+          raise if retry_count <= 0
+
+          retry_count -= 1
+          puts e.inspect
+          retry
+        end
+      end
+
+      def launch_webrick
         default_server_process = Capybara.server
         Capybara.server do |app, port|
           require 'rack/handler/webrick'
